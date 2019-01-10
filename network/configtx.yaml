@@ -1,0 +1,126 @@
+Organizations:
+
+    - &DisasterOrdererOrg
+        Name: DisasterOrdererOrg
+        ID: DisasterOrdererMSP
+        MSPDir: crypto-config/ordererOrganizations/disaster.com/msp
+
+    - &ReliefCamp
+        Name: ReliefCampMSP
+        ID: ReliefCampMSP
+        MSPDir: crypto-config/peerOrganizations/reliefcamp.disaster.com/msp
+        AnchorPeers:
+            - Host: peer0.reliefcamp.disaster.com
+              Port: 7051
+
+    - &LocalHub
+        Name: LocalHubMSP
+        ID: LocalHubMSP
+        MSPDir: crypto-config/peerOrganizations/localhub.disaster.com/msp
+        AnchorPeers:
+            - Host: peer0.localhub.disaster.com
+              Port: 7051
+
+    - &Logistics
+        Name: LogisticsMSP
+        ID: logisticsMSP
+        MSPDir: crypto-config/peerOrganizations/logistics.disaster.com/msp
+        AnchorPeers:
+            - Host: peer.logistics.disaster.com
+              Port: 7051
+
+    - &NGO
+        Name: NGOMSP
+        ID: NGOMSP
+        MSPDir: crypto-config/peerOrganizations/ngo.disaster.com/msp
+        AnchorPeers:
+            - Host: peer.ngo.disaster.com
+              Port: 7051
+
+    - &Government
+        Name: GovernmentMSP
+        ID: GovernmentMSP
+        MSPDir: crypto-config/peerOrganizations/government.disaster.com/msp
+        AnchorPeers:
+           - Host: peer.government.disaster.com
+             Port: 7051
+
+
+################################################################################
+
+Orderer: &OrdererDefaults
+
+    OrdererType: solo
+    Addresses:
+        - orderer.disaster.com:7050
+    BatchTimeout: 2s
+    BatchSize:
+
+        MaxMessageCount: 10
+        AbsoluteMaxBytes: 99 MB
+        PreferredMaxBytes: 512 KB
+
+    Kafka:
+        Brokers:
+            - 127.0.0.1:9092
+
+    # Organizations is the list of orgs which are defined as participants on
+    # the orderer side of the network
+    Organizations:
+
+################################################################################
+
+Application: &ApplicationDefaults
+
+    # Organizations is the list of orgs which are defined as participants on
+    # the application side of the network
+    Organizations:
+
+################################################################################
+
+Capabilities:
+    Global: &ChannelCapabilities
+        V1_1: true
+    Orderer: &OrdererCapabilities
+        V1_1: true
+
+    Application: &ApplicationCapabilities
+        V1_1: true
+
+################################################################################
+
+Profiles:
+
+    DisasterOrdererGenesis:
+        Capabilities:
+            <<: *ChannelCapabilities
+        Orderer:
+            <<: *OrdererDefaults
+            Organizations:
+                - *DisasterOrdererOrg
+            Capabilities:
+                <<: *OrdererCapabilities
+        Consortiums:
+            DisasterConsortium:
+                Organizations:
+                    - *ReliefCamp
+                    - *LocalHub
+                    - *Logistics
+                    - *NGO
+                    - *Government
+    DisasterManagementChannel:
+        Consortium: DisasterConsortium
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+                    - *ReliefCamp
+                    - *LocalHub
+                    - *Logistics
+                    - *NGO
+                    - *Government
+            Capabilities:
+                <<: *ApplicationCapabilities
+
+
+
+        

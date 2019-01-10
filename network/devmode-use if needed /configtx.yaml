@@ -1,0 +1,72 @@
+Organizations:
+    - &DisasterOrdererOrg
+        Name: DisasterOrdererMSP
+        ID: DisasterOrdererMSP
+        MSPDir: crypto-config/ordererOrganizations/disaster.com/msp
+
+    - &DevOrg
+        Name: DevOrgMSP
+        ID: DevOrgMSP
+        MSPDir: crypto-config/peerOrganizations/devorg.disaster.com/msp
+
+        AnchorPeers:
+            - Host: peer
+              Port: 7051
+
+################################################################################
+
+Orderer: &OrdererDefaults
+    OrdererType: solo
+
+    Addresses:
+        - orderer:7050
+    BatchTimeout: 2s
+    BatchSize:
+        MaxMessageCount: 10
+        AbsoluteMaxBytes: 99 MB
+        PreferredMaxBytes: 512 KB
+
+    Kafka:
+        Brokers:
+            - 127.0.0.1:9092
+    Organizations:
+
+################################################################################
+Application: &ApplicationDefaults
+    Organizations:
+################################################################################
+Capabilities:
+    Global: &ChannelCapabilities
+        V1_1: true
+    Orderer: &OrdererCapabilities
+        V1_1: true
+    Application: &ApplicationCapabilities
+        V1_1: true
+
+################################################################################
+
+Profiles:
+
+    OneOrgDisasterOrdererGenesis:
+        Capabilities:
+            <<: *ChannelCapabilities
+        Orderer:
+            <<: *OrdererDefaults
+            Organizations:
+                - *DisasterOrdererOrg
+            Capabilities:
+                <<: *OrdererCapabilities
+        Consortiums:
+            DisasterConsortium:
+                Organizations:
+                    - *DevOrg
+    OneOrgDisasterChannel:
+        Consortium: DisasterConsortium
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+                - *DevOrg
+            Capabilities:
+                <<: *ApplicationCapabilities
+
+

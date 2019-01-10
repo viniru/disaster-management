@@ -1,0 +1,134 @@
+version: '2'
+
+services:
+
+  orderer.disaster.com:
+    container_name: orderer.disaster.com
+    image: hyperledger/fabric-orderer:$IMAGE_TAG
+    environment:
+      - ORDERER_GENERAL_LOGLEVEL=DEBUG
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_GENESISMETHOD=file
+      - ORDERER_GENERAL_GENESISFILE=/var/hyperledger/orderer/orderer.genesis.block #i dont know if any of this has to be changed.
+      - ORDERER_GENERAL_LOCALMSPID=DisasterOrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      # enabled TLS
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric #this has been changed.
+    command: orderer
+    volumes:
+    - ../channel-artifacts/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
+    - ../crypto-config/ordererOrganizations/disaster.com/orderers/orderer.disaster.com/msp:/var/hyperledger/orderer/msp
+    - ../crypto-config/ordererOrganizations/disaster.com/orderers/orderer.disaster.com/tls/:/var/hyperledger/orderer/tls
+    - orderer.disaster.com:/var/hyperledger/production/orderer
+    ports:
+      - 7050:7050
+
+  peer0.reliefcamp.disaster.com:
+    container_name: peer0.reliefcamp.disaster.com
+    extends:
+      file: peer-base.yaml
+      service: peer-base
+    environment:
+      - CORE_PEER_ID=peer0.reliefcamp.disaster.com
+      - CORE_PEER_ADDRESS=peer0.reliefcamp.disaster.com:7051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.reliefcamp.disaster.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.reliefcamp.disaster.com:7051
+      - CORE_PEER_LOCALMSPID=ReliefCampMSP
+    volumes:
+        - /var/run/:/host/var/run/
+        - ../crypto-config/peerOrganizations/reliefcamp.disaster.com/peers/peer0.reliefcamp.disaster.com/msp:/etc/hyperledger/fabric/msp
+        - ../crypto-config/peerOrganizations/reliefcamp.disaster.com/peers/peer0.reliefcamp.disaster.com/tls:/etc/hyperledger/fabric/tls
+        - peer0.reliefcamp.disaster.com:/var/hyperledger/production
+    ports:
+      - 7051:7051
+      - 7053:7053
+      - 7055:6060
+
+  peer0.localhub.disaster.com:
+    container_name: peer0.localhub.disaster.com
+    extends:
+      file: peer-base.yaml
+      service: peer-base
+    environment:
+      - CORE_PEER_ID=peer0.localhub.disaster.com
+      - CORE_PEER_ADDRESS=peer0.localhub.disaster.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.localhub.disaster.com:7051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.localhub.disaster.com:7051
+      - CORE_PEER_LOCALMSPID=LocalHubMSP
+    volumes:
+        - /var/run/:/host/var/run/
+        - ../crypto-config/peerOrganizations/localhub.disaster.com/peers/peer0.localhub.disaster.com/msp:/etc/hyperledger/fabric/msp
+        - ../crypto-config/peerOrganizations/localhub.disaster.com/peers/peer0.localhub.disaster.com/tls:/etc/hyperledger/fabric/tls
+        - peer0.localhub.disaster.com:/var/hyperledger/production
+
+    ports:
+      - 8051:7051
+      - 8053:7053
+      - 8055:6060
+
+  peer0.logistics.disaster.com:
+    container_name: peer0.logistics.disaster.com
+    extends:
+      file: peer-base.yaml
+      service: peer-base
+    environment:
+      - CORE_PEER_ID=peer0.logistics.disaster.com
+      - CORE_PEER_ADDRESS=peer0.logistics.disaster.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.logistics.disaster.com:7051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.logistics.disaster.com:7051
+      - CORE_PEER_LOCALMSPID=LogisticsMSP
+    volumes:
+        - /var/run/:/host/var/run/
+        - ../crypto-config/peerOrganizations/logistics.disaster.com/peers/peer0.logistics.disaster.com/msp:/etc/hyperledger/fabric/msp
+        - ../crypto-config/peerOrganizations/logistics.disaster.com/peers/peer0.logistics.disaster.com/tls:/etc/hyperledger/fabric/tls
+        - peer0.logistics.disaster.com:/var/hyperledger/production
+    ports:
+      - 9051:7051
+      - 9053:7053
+      - 9055:6060
+
+  peer0.ngo.disaster.com:
+    container_name: peer0.ngo.disaster.com
+    extends:
+      file: peer-base.yaml
+      service: peer-base
+    environment:
+      - CORE_PEER_ID=peer0.ngo.disaster.com
+      - CORE_PEER_ADDRESS=peer0.ngo.disaster.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.ngo.disaster.com:7051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.ngo.disaster.com:7051
+      - CORE_PEER_LOCALMSPID=NGOMSP
+    volumes:
+        - /var/run/:/host/var/run/
+        - ../crypto-config/peerOrganizations/ngo.disaster.com/peers/peer0.ngo.disaster.com/msp:/etc/hyperledger/fabric/msp
+        - ../crypto-config/peerOrganizations/ngo.disaster.com/peers/peer0.ngo.disaster.com/tls:/etc/hyperledger/fabric/tls
+        - peer0.ngo.disaster.com:/var/hyperledger/production
+    ports:
+      - 10051:7051
+      - 10053:7053
+      - 10055:6060
+
+  peer0.government.disaster.com:
+    container_name: peer0.government.disaster.com
+    extends:
+      file: peer-base.yaml
+      service: peer-base
+    environment:
+      - CORE_PEER_ID=peer0.government.disaster.com
+      - CORE_PEER_ADDRESS=peer0.government.disaster.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.government.disaster.com:7051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.government.disaster.com:7051
+      - CORE_PEER_LOCALMSPID=GovernmentMSP
+    volumes:
+        - /var/run/:/host/var/run/
+        - ../crypto-config/peerOrganizations/government.disaster.com/peers/peer0.government.disaster.com/msp:/etc/hyperledger/fabric/msp
+        - ../crypto-config/peerOrganizations/government.disaster.com/peers/peer0.government.disaster.com/tls:/etc/hyperledger/fabric/tls
+        - peer0.government.disaster.com:/var/hyperledger/production
+    ports:
+      - 11051:7051
+      - 11053:7053
+      - 11055:6060

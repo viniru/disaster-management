@@ -1,0 +1,15 @@
+
+OrdererOrgs:
+  - Name: DisasterOrderer
+    Domain: disaster.com
+    Specs:
+      - Hostname: orderer
+PeerOrgs:
+  - Name: DevOrg
+    Domain: devorg.disaster.com
+    EnableNodeOUs: false
+    Template:
+      Count: 1
+    Users:
+      Count: 2
+

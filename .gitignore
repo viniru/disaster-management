@@ -1,0 +1,9 @@
+bin/configtxgen
+bin/configtxlator
+bin/cryptogen
+bin/discover
+bin/fabric-ca-client
+bin/get-docker-images.sh
+bin/idemixgen
+bin/orderer
+bin/peer

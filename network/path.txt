@@ -1,0 +1,5 @@
+export GOPATH=$HOME/Documents/go
+export PATH=$PATH:$GOPATH/bin
+export PATH=$PATH:/usr/local/go/bin
+export PATH=$HOME/Documents/go/src/github.com/hyperledger/fabric-samples/bin:$PATH
+export PATH=$HOME/Documents/go/src/github.com/hyperledger/fabric/fabric-client:$PATH

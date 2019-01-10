@@ -1,0 +1,2 @@
+The Compose file './docker-compose-e2e.yaml' is invalid because:
+services.peer0.reliefcamp.disaster.com.networks contains null, which is an invalid type, it should be a string

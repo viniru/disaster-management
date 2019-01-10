@@ -1,0 +1,47 @@
+OrdererOrgs:
+  - Name: DisasterOrderer
+    Domain: disaster.com
+    Specs:
+      - Hostname: orderer
+
+
+PeerOrgs:
+  - Name: LocalHub
+    Domain: localhub.disaster.com
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+    Users:
+      Count: 1
+
+  - Name: ReliefCamp
+    Domain: reliefcamp.disaster.com
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+    Users:
+      Count: 1
+
+  - Name: Logistics
+    Domain: logistics.disaster.com
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+    Users:
+      Count: 1
+
+  - Name: NGO
+    Domain: ngo.disaster.com
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+    Users:
+      Count: 1
+
+  - Name: Government
+    Domain: government.disaster.com
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+    Users:
+      Count: 1
