@@ -4,7 +4,7 @@ export PATH=${PWD}/../bin:${PWD}:$PATH
 export FABRIC_CFG_PATH=${PWD}
 
 
-DEV_MODE=false
+DEV_MODE=true
 
 
 function printHelp () {

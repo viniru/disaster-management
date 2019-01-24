@@ -1,0 +1,147 @@
+version: '2'
+
+volumes:
+  orderer.disaster.com:
+  peer0.reliefcamp.disaster.com:
+  peer0.localhub.disaster.com:
+  peer0.logistics.disaster.com:
+  peer0.ngo.disaster.com:
+  peer0.government.disaster.com:
+
+networks:
+  disaster:
+services:
+  reliefcamp-ca:
+    image: hyperledger/fabric-ca:$IMAGE_TAG
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-reliefcamp
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.reliefcamp.disaster.com-cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/RELIEFCAMP_CA_PRIVATE_KEY
+    ports:
+      - "7054:7054"
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.reliefcamp.disaster.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/RELIEFCAMP_CA_PRIVATE_KEY -b admin:adminpw -d'
+    volumes:
+      - ./crypto-config/peerOrganizations/reliefcamp.disaster.com/ca/:/etc/hyperledger/fabric-ca-server-config
+    container_name: ca_peerReliefCamp
+    networks:
+      - disaster
+
+  localhub-ca:
+    image: hyperledger/fabric-ca:$IMAGE_TAG
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-localhub
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.localhub.disaster.com-cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/LOCALHUB_CA_PRIVATE_KEY
+    ports:
+      - "8054:7054"
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.localhub.disaster.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/LOCALHUB_CA_PRIVATE_KEY -b admin:adminpw -d'
+    volumes:
+      - ./crypto-config/peerOrganizations/localhub.disaster.com/ca/:/etc/hyperledger/fabric-ca-server-config
+    container_name: ca_peerLocalHub
+    networks:
+      - disaster
+
+  logistics-ca:
+    image: hyperledger/fabric-ca:$IMAGE_TAG
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-logistics
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.logistics.disaster.com-cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/LOGISTICS_CA_PRIVATE_KEY
+    ports:
+      - "9054:7054"
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.logistics.disaster.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/LOGISTICS_CA_PRIVATE_KEY -b admin:adminpw -d'
+    volumes:
+      - ./crypto-config/peerOrganizations/logistics.disaster.com/ca/:/etc/hyperledger/fabric-ca-server-config
+    container_name: ca_peerLogistics
+    networks:
+      - disaster
+
+  ngo-ca:
+    image: hyperledger/fabric-ca:$IMAGE_TAG
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-ngo
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.ngo.disaster.com-cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/NGO_CA_PRIVATE_KEY
+    ports:
+      - "10054:7054"
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.ngo.disaster.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/NGO_CA_PRIVATE_KEY -b admin:adminpw -d'
+    volumes:
+      - ./crypto-config/peerOrganizations/ngo.disaster.com/ca/:/etc/hyperledger/fabric-ca-server-config
+    container_name: ca_peerNGO
+    networks:
+      - disaster
+
+  government-ca:
+    image: hyperledger/fabric-ca:$IMAGE_TAG
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-government
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.government.disaster.com-cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/GOVERNMENT_CA_PRIVATE_KEY
+    ports:
+      - "11054:7054"
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.government.disaster.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/GOVERNMENT_CA_PRIVATE_KEY -b admin:adminpw -d'
+    volumes:
+      - ./crypto-config/peerOrganizations/government.disaster.com/ca/:/etc/hyperledger/fabric-ca-server-config
+    container_name: ca_peerGovernment
+    networks:
+      - disaster
+
+  orderer.disaster.com:
+    extends:
+      file:   base/docker-compose-base.yaml
+      service: orderer.disaster.com
+    container_name: orderer.disaster.com
+    networks:
+      - disaster
+
+  peer0.reliefcamp.disaster.com:
+    container_name: peer0.reliefcamp.disaster.com
+    extends:
+      file:  base/docker-compose-base.yaml
+      service: peer0.reliefcamp.disaster.com
+    networks:
+      - 
+
+  peer0.localhub.disaster.com:
+    container_name: peer0.localhub.disaster.com
+    extends:
+      file:  base/docker-compose-base.yaml
+      service: peer0.localhub.disaster.com
+    networks:
+      - disaster
+
+  peer0.logistics.disaster.com:
+    container_name: peer0.logistics.disaster.com
+    extends:
+      file:  base/docker-compose-base.yaml
+      service: peer0.logistics.disaster.com
+    networks:
+      - disaster
+
+  peer0.ngo.disaster.com:
+    container_name: peer0.ngo.disaster.com
+    extends:
+      file:  base/docker-compose-base.yaml
+      service: peer0.ngo.disaster.com
+    networks:
+      - disaster
+
+  peer0.government.disaster.com:
+    container_name: peer0.government.disaster.com
+    extends:
+      file:  base/docker-compose-base.yaml
+      service: peer0.government.disaster.com
+    networks:
+      - disaster
+
+
