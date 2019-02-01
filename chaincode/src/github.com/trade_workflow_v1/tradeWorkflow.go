@@ -29,9 +29,8 @@ func (t *DisasterChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 func (t *DisasterChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	fmt.Println("Disaster Management Invoke")
 	function, args := stub.GetFunctionAndParameters()
-
-	 if function == "testOne" {
-		 fmt.Printf("testOne invoked and the argument is '%s' \n",args[0])
+	if function == "testOne" {
+		 fmt.Println("testOne invoked and the argument is '%s' \n",args[0])
 		 return t.testOne(stub,args)
 	 } else if function == "testTwo" {
 		 fmt.Printf("testTwo invoked and the arguments are '%s' and '%s' \n", args[0],args[1])

@@ -1,55 +1,53 @@
-/*
- * Copyright 2018 IBM All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the 'License');
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package main
 
-type TradeAgreement struct {
-	Amount			int		`json:"amount"`
-	DescriptionOfGoods	string		`json:"descriptionOfGoods"`
-	Status			string		`json:"status"`
-	Payment			int		`json:"payment"`
+type Resource struct{
+	TypeOfResource		string		`json:"typeofresource"`
+	Quantity			string		`json:"quantity"`
+	Beneficiary			string		`json:"beneficiary"`
+	Source				string		`json:"source"`
+	Status				string		`json:"status"`
+	Carrier				string		`json:"carrier"`
+	Description			string 		`json:"description"`
 }
 
-type LetterOfCredit struct {
-	Id			string		`json:"id"`
-	ExpirationDate		string		`json:"expirationDate"`
-	Beneficiary		string		`json:"beneficiary"`
-	Amount			int		`json:"amount"`
-	Documents		[]string	`json:"documents"`
-	Status			string		`json:"status"`
+type Food struct{
+	Res					Resource	`json:"resource"`
 }
 
-type ExportLicense struct {
-	Id			string		`json:"id"`
-	ExpirationDate		string		`json:"expirationDate"`
-	Exporter		string		`json:"exporter"`
-	Carrier			string		`json:"carrier"`
-	DescriptionOfGoods	string		`json:"descriptionOfGoods"`
-	Approver		string		`json:"approver"`
-	Status			string		`json:"status"`
+type Clothes struct{
+	Res					Resource	`json:"resource"`
 }
 
-type BillOfLading struct {
-	Id			string		`json:"id"`
-	ExpirationDate		string		`json:"expirationDate"`
-	Exporter		string		`json:"exporter"`
-	Carrier			string		`json:"carrier"`
-	DescriptionOfGoods	string		`json:"descriptionOfGoods"`
-	Amount			int		`json:"amount"`
-	Beneficiary		string		`json:"beneficiary"`
-	SourcePort		string		`json:"sourcePort"`
-	DestinationPort		string		`json:"destinationPort"`
+type MoveInShelter struct{
+	Capacity			string		`json:"capacity"`
+	Address				string		`josn:"address"`
+	Food				bool		`json:"food"`
+	Res					Resource	`json:"resource"`	
+}
+
+type Shelter struct{
+	Res						Resource	`json:"resource"`
+}
+
+type MedicalKit struct{
+	Res					Resource	`json:"resource"`
+}
+
+type GovernmentRequest struct{
+
+}
+
+type Victim struct{
+	Reliefcamp			string		`json:"reliefcamp"`
+	HealthCondition		string		`json:"health"`
+}
+
+type Volunteer struct{
+	Localhub 			string 		`json:"localhub"`
+}
+
+type Participant struct{
+	Email				string 		`json:"email"`
+	Location			string		`json:"location"`
+	Description			string		`json:"description"`
 }
