@@ -3,3 +3,22 @@ export PATH=$PATH:$GOPATH/bin
 export PATH=$PATH:/usr/local/go/bin
 export PATH=$HOME/Documents/go/src/github.com/hyperledger/fabric-samples/bin:$PATH
 export PATH=$HOME/Documents/go/src/github.com/hyperledger/fabric/fabric-client:$PATH
+
+
+docker stop $(docker ps -a -q)
+docker rm $(docker ps -a -q)
+
+./tradedev.sh up
+docker exec -it chaincode bash
+cd trade_workflow_v1
+go build
+
+CORE_PEER_ADDRESS=peer:7052 CORE_CHAINCODE_ID_NAME=tw:0 ./trade_workflow_v1
+
+
+docker exec -it cli bash
+peer chaincode install -p chaincodedev/chaincode/trade_workflow_v1 -n tw -v 0
+
+peer chaincode instantiate -n tw -v 0 -c '{"Args":[]}' -C tradechannel
+
+peer chaincode invoke -n tw -c '{"Args":["testOne","testOne"]}' -C tradechannel

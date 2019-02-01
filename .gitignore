@@ -7,3 +7,5 @@ bin/get-docker-images.sh
 bin/idemixgen
 bin/orderer
 bin/peer
+network/devmode/docker-compose-e2e.yaml
+network/devmode/logs/network.log
