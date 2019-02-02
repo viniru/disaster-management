@@ -119,10 +119,36 @@ var err error
 
 	//victim info saved successfully
 	fmt.Println("victim info saved successfully")
+	
 	return shim.Success(nil)
 }
 
 func (t *DisasterChaincode) Request_VictimToReliefCamp(stub shim.ChaincodeStubInterface,invokerOrg string, invokerCertIssuer string, args []string) pb.Response{
+
+	email := args[0]
+
+	//check if the victim info is there on the ledger
+	victimRetrieveBytes, err := stub.GetState(email)
+
+	if err != nil {
+		fmt.Println("error while retieving the victim info from the ledger " + err.Error())
+		return shim.Error(err.Error())
+	} else if victimRetrieveBytes == nil {
+		fmt.Println("victim does not exist")
+	}
+
+	victimRetrieve := Victim{}
+	err = json.Unmarshal(victimRetrieveBytes,&victimRetrieve)
+
+	if err != nil {
+		fmt.Println("error while unmarshalling " + err.Error())
+		return shim.Error(err.Error())
+	} else {
+		fmt.Print("success retrieving.Look at this : ")
+		fmt.Println(victimRetrieve )
+		fmt.Println("can go ahead with the request")
+		}
+
 	return shim.Success(nil)
 }
 

@@ -21,4 +21,8 @@ peer chaincode install -p chaincodedev/chaincode/trade_workflow_v1 -n tw -v 0
 
 peer chaincode instantiate -n tw -v 0 -c '{"Args":["init"]}' -C tradechannel
 
-peer chaincode invoke -n tw -c '{"Args":["testOne","testOne"]}' -C tradechannel
+peer chaincode invoke -n tw -c '{"Args":["RegisterVictim","xyz camp","good","abc@efg.com","lat:2 long:5","nil"]}' -C tradechannel
+
+peer chaincode invoke -n tw -c '{"Args":["Request_VictimToReliefCamp","abc@efg.com"]}' -C tradechannel
+
+
