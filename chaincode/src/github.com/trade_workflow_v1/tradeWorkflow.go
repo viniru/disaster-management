@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	//"errors"
+	"errors"
 	//"strconv"
-	//"strings"
-	//"encoding/json"
+	"strings"
+	"encoding/json"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	//"github.com/hyperledger/fabric/core/chaincode/lib/cid"
 	pb "github.com/hyperledger/fabric/protos/peer"
@@ -27,30 +27,108 @@ func (t *DisasterChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 }
 
 func (t *DisasterChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
+
 	fmt.Println("Disaster Management Invoke")
+
+	var err error
+	var invokerOrg, invokerCertIssuer string
+
+	if !t.testMode {
+		invokerOrg, invokerCertIssuer, err = getTxCreatorInfo(stub)
+		if err != nil {
+			fmt.Println("Error extracting invoker identity info: %s\n", err.Error())
+			fmt.Errorf("Error extracting invoker identity info: %s\n", err.Error())
+			return shim.Error(err.Error())
+		}
+		fmt.Printf("TradeWorkflow Invoke by '%s', '%s'\n", invokerOrg, invokerCertIssuer)
+	}
+
 	function, args := stub.GetFunctionAndParameters()
-	if function == "testOne" {
-		 fmt.Println("testOne invoked and the argument is '%s' \n",args[0])
-		 return t.testOne(stub,args)
-	 } else if function == "testTwo" {
-		 fmt.Printf("testTwo invoked and the arguments are '%s' and '%s' \n", args[0],args[1])
-		 return t.testTwo(stub,args)
+
+	if function == "RegisterVictim" {
+		 return t.RegisterVictim(stub,invokerOrg, invokerCertIssuer,args)
+
+	 } else if function == "Request_VictimToReliefCamp" {
+		 return t.Request_VictimToReliefCamp(stub,invokerOrg, invokerCertIssuer,args)
 	 }
 
 	 return shim.Error("invalid mehtod invokation")
 }
 
-func (t *DisasterChaincode) testOne(stub shim.ChaincodeStubInterface,args []string) pb.Response{
+func (t *DisasterChaincode) RegisterVictim(stub shim.ChaincodeStubInterface,invokerOrg string, invokerCertIssuer string, args []string) pb.Response{
+var err error
+
+	if !t.testMode && !authenticateReliefCamp(invokerOrg,invokerCertIssuer){
+		return shim.Error("Caller not a member of the relief camp. access denied")
+	}
+
+	if(len(args) != 5) {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 5.Found %d",len(args)))
+		return shim.Error(err.Error())
+	}
+	reliefcamp := strings.ToLower(args[0])
+	email := strings.ToLower(args[2])
+	
+	//=== check if the user already exitsts===
+	victimBytes, err := stub.GetState(email)
+	if err != nil {
+		fmt.Println("Failed to check whether the email exists or not")
+		return shim.Error("Failed to check whether the email exists or not " + err.Error())
+	} else if victimBytes != nil {
+		fmt.Println("This marble already exists " + email)
+		return shim.Error("The requested email already exists " + email)
+	}
+
+	//########### create victim object and marshal to json ##############
+	
+	var victim Victim
+	victim.Reliefcamp = reliefcamp
+	victim.HealthCondition = args[1]
+	victim.Details = Participant{
+	Email : email,
+	Location : args[3],
+	Description	 : args[4],
+	}
+
+	victimBytes, err = json.Marshal(victim)		//Marshal the victim structure into a sequence of bytes
+	if err != nil {
+		return shim.Error("Error marshalling trade Agreement structure")
+	}
+
+
+	//########### Store the victim details in the ledger ###########
+
+	err = stub.PutState(email,victimBytes)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	//######### create a composite key ##########
+
+	indexName := "Reliefcamp-email"
+	camp_emailIndexKey, err := stub.CreateCompositeKey(indexName,[]string{reliefcamp, email})
+	if err != nil {
+		fmt.Println("error while creating a composite key")
+		return shim.Error(err.Error())
+	}
+
+	//store the index name onto the ledger, just the index and not the info about the corresponding victim
+	
+	value := []byte{0x00}
+	stub.PutState(camp_emailIndexKey,value)
+
+	//victim info saved successfully
+	fmt.Println("victim info saved successfully")
 	return shim.Success(nil)
 }
 
-func (t *DisasterChaincode) testTwo(stub shim.ChaincodeStubInterface,args []string) pb.Response{
+func (t *DisasterChaincode) Request_VictimToReliefCamp(stub shim.ChaincodeStubInterface,invokerOrg string, invokerCertIssuer string, args []string) pb.Response{
 	return shim.Success(nil)
 }
 
 func main() {
 	twc := new(DisasterChaincode)
-	twc.testMode = false
+	twc.testMode = true
 	err := shim.Start(twc)
 	if err != nil {
 		fmt.Printf("Error starting Disaster chaincode: %s", err)
