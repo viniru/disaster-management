@@ -40,10 +40,12 @@ type GovernmentRequest struct{
 type Victim struct{
 	Reliefcamp			string		`json:"reliefcamp"`
 	HealthCondition		string		`json:"health"`
+	Details				Participant `json:"details"`
 }
 
 type Volunteer struct{
 	Localhub 			string 		`json:"localhub"`
+	Details				Participant `json:"details"`
 }
 
 type Participant struct{
