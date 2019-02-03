@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"errors"
-	//"strconv"
+	"strconv"
 	"strings"
 	"encoding/json"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
@@ -84,6 +84,7 @@ var err error
 	var victim Victim
 	victim.Reliefcamp = reliefcamp
 	victim.HealthCondition = args[1]
+	victim.NumRequests = 0
 	victim.Details = Participant{
 	Email : email,
 	Location : args[3],
@@ -125,30 +126,82 @@ var err error
 
 func (t *DisasterChaincode) Request_VictimToReliefCamp(stub shim.ChaincodeStubInterface,invokerOrg string, invokerCertIssuer string, args []string) pb.Response{
 
+	if !t.testMode && !authenticateReliefCamp(invokerOrg,invokerCertIssuer){
+		return shim.Error("Caller not a member of the relief camp. access denied")
+	}
+
+	if(len(args) != 4) {
+		err := errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 4.Found %d",len(args)))
+		return shim.Error(err.Error())
+	}
+
+
 	email := args[0]
 
 	//check if the victim info is there on the ledger
-	victimRetrieveBytes, err := stub.GetState(email)
+	victimBytes, err := stub.GetState(email)
 
 	if err != nil {
 		fmt.Println("error while retieving the victim info from the ledger " + err.Error())
 		return shim.Error(err.Error())
-	} else if victimRetrieveBytes == nil {
+	} else if victimBytes == nil {
 		fmt.Println("victim does not exist")
 	}
 
-	victimRetrieve := Victim{}
-	err = json.Unmarshal(victimRetrieveBytes,&victimRetrieve)
+	victim := Victim{}
+	err = json.Unmarshal(victimBytes,&victim)
 
 	if err != nil {
 		fmt.Println("error while unmarshalling " + err.Error())
 		return shim.Error(err.Error())
-	} else {
-		fmt.Print("success retrieving.Look at this : ")
-		fmt.Println(victimRetrieve )
-		fmt.Println("can go ahead with the request")
-		}
+	}
 
+	//go on with considering the request
+	rid := email + strconv.Itoa((victim.NumRequests+1))	//generate request id for this particular victim and request
+	victim.NumRequests = victim.NumRequests+1
+
+	//create the request asset
+
+	request := VictimRequest{email,rid,victim.Reliefcamp,"requested",args[1],args[2],args[3]}
+
+	//update the data of the victim on the ledger
+
+	victimPutBytes,err := json.Marshal(victim)
+	if err != nil {
+		fmt.Println("error occured while marhsalling victim info")
+		return shim.Error(err.Error())
+	}
+	err = stub.PutState(email,victimPutBytes)
+	if err != nil {
+		fmt.Println("error occured while writing victim info onto the ledger")
+		return shim.Error(err.Error())
+	}
+
+	//write the request data onto the ledger
+	requestBytes, err := json.Marshal(request)
+	if err != nil {
+		fmt.Println("error occured while marhsalling request info")
+		return shim.Error(err.Error())
+	}
+	err = stub.PutState(email,requestBytes)
+	if err != nil {
+		fmt.Println("error occured while writing request info onto the ledger")
+		return shim.Error(err.Error())
+	}
+	//############## create a composite key ################33
+
+	indexName := "request-reliefcamp-email-requestid"
+	request_camp_emailIndexKey, err := stub.CreateCompositeKey(indexName,[]string{"r",victim.Reliefcamp,email,rid})
+	if err != nil {
+		fmt.Println("error while creating a composite key")
+		return shim.Error(err.Error())
+	}
+
+	//store the index name onto the ledger, just the index and not the info about the corresponding victim
+	
+	value := []byte{0x00}
+	stub.PutState(request_camp_emailIndexKey,value)
+	fmt.Println("done")
 	return shim.Success(nil)
 }
 
