@@ -23,6 +23,8 @@ peer chaincode instantiate -n tw -v 0 -c '{"Args":["init"]}' -C tradechannel
 
 peer chaincode invoke -n tw -c '{"Args":["RegisterVictim","xyz camp","good","abc@efg.com","lat:2 long:5","nil"]}' -C tradechannel
 
-peer chaincode invoke -n tw -c '{"Args":["Request_VictimToReliefCamp","abc@efg.com"]}' -C tradechannel
+peer chaincode invoke -n tw -c '{"Args":["Request_VictimToReliefCamp","abc@efg.com","food","3","we are three in number"]}' -C tradechannel
+
+
 
 
