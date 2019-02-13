@@ -23,6 +23,9 @@ type DisasterChaincode struct {			//implements the shim.chaincode interface
 
 func (t *DisasterChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 	fmt.Println("Initializing Disaster Management")
+	assetid := 1
+	intByte := []byte(strconv.Itoa(assetid))
+	stub.PutState("assetid",intByte)
 	return shim.Success(nil)
 }
 
@@ -183,15 +186,15 @@ func (t *DisasterChaincode) Request_VictimToReliefCamp(stub shim.ChaincodeStubIn
 		fmt.Println("error occured while marhsalling request info")
 		return shim.Error(err.Error())
 	}
-	err = stub.PutState(email,requestBytes)
+	err = stub.PutState(rid,requestBytes)
 	if err != nil {
 		fmt.Println("error occured while writing request info onto the ledger")
 		return shim.Error(err.Error())
 	}
 	//############## create a composite key ################33
 
-	indexName := "request-reliefcamp-email-requestid"
-	request_camp_emailIndexKey, err := stub.CreateCompositeKey(indexName,[]string{"r",victim.Reliefcamp,email,rid})
+	indexName := "request-reliefcamp-status-email-rid"
+	request_camp_emailIndexKey, err := stub.CreateCompositeKey(indexName,[]string{"r",victim.Reliefcamp,"requested",email,rid})
 	if err != nil {
 		fmt.Println("error while creating a composite key")
 		return shim.Error(err.Error())
@@ -203,6 +206,171 @@ func (t *DisasterChaincode) Request_VictimToReliefCamp(stub shim.ChaincodeStubIn
 	stub.PutState(request_camp_emailIndexKey,value)
 	fmt.Println("done")
 	return shim.Success(nil)
+}
+
+func (t *DisasterChaincode) FetchRequestInfoByStatus(stub shim.ChaincodeStubInterface,invokerOrg string, invokerCertIssuer string, args []string) pb.Response{
+	
+	
+
+}	
+
+func (t *DisasterChaincode) Response_RequestOfVictimToReliefCamp(stub shim.ChaincodeStubInterface,invokerOrg string, invokerCertIssuer string, args []string) pb.Response{
+
+	if !t.testMode && !authenticateReliefCamp(invokerOrg,invokerCertIssuer){
+		return shim.Error("Caller not a member of the relief camp. access denied")
+	}
+
+	if len(args) != 2 {
+		err := errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 4.Found %d",len(args)))
+		return shim.Error(err.Error())
+	}
+
+	camp := args[0]
+	status := args[1]
+
+	keysIterator,err = stub.GetStateByPartialCompositeKey("request-reliefcamp-status-email-rid",[]string{"r",camp,status})
+	if err != nil {
+		return shim.Error("Error while accessing state : %s", err)
+	}
+
+	defer keysIterator.close()
+	var keys []string
+	for keysIterator.HasNext() {
+		key,_,err = keysIterator.Next()
+		if err != nil{
+			return shim.Error("Error while accessing state through an iterator")
+		}
+
+	keys = append(keys,key)
+
+	var attr []string
+	_,attr,err = stub.SplitCompositeKey(key)
+	if err != nil{
+		return shim.Error("error while splitting the composite key : %s",err)
+	}
+
+	kemail = attr[3]
+	krid = attr[4]
+
+
+	}
+}
+
+func (t *DisasterChaincode) AddAsset(stub shim.ChaincodeStubInterface,invokerOrg string, invokerCertIssuer string, args []string) pb.Response{
+	var error errors
+	type := args[0]
+	var nargs int
+	
+	if type == moveinshelter{
+		nargs = 10
+	} else {
+		nargs = 7
+	}
+
+	if nargs != len(args) {
+		err := errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 4.Found %d",len(args)))
+		return shim.Error(err.Error())
+	}
+//###### create a resource object ###############
+	quantity := args[1]
+	beneficiary := args[2]
+	source := args[3]
+	status := args[4]
+	carrier := args[5]
+	description := args[6]
+	var address,food,capacity int
+	if(nargs == 10){
+		capacity = args[7]
+		address = args[8]
+		if args[9] == "yes"{
+			food = true
+			} else { food = false }
+		
+	}
+
+//################ generate asset id #####################################
+
+idbytes,err = stub.GetState("assetid")
+if err != nil{
+	return shim.Error("error while getting the asset id value :  %s",err)
+}
+ids := string(idbytes[:])
+id,err := strconv.Atoi(ids)
+id = id + 1;
+ids = strconv.Itoa(id)
+err = stub.PutState([]byte("assetid",ids))	
+if err != nil{
+	return shim.Error("error while getting the asset id value :  %s",err)
+}
+
+//################ create a particular type of resource ##################
+	resource := Resource{type,quantity,beneficiary,source,status,carrier,description}
+	if type == "food"{
+		asset := Food{resource}
+		assetbytes, err = json.Marshal(victim)	//Marshal the asset structure into a sequence of bytes
+		if err != nil {
+			return shim.Error("Error marshalling asset")
+		}
+		//########### Store the asset details in the ledger ###########
+
+		err = stub.PutState(id,assetbytes)
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+	} else if type == "clothes"{
+	    asset := Clothes{resource}
+		assetbytes, err = json.Marshal(victim)	//Marshal the asset structure into a sequence of bytes
+		if err != nil {
+			return shim.Error("Error marshalling asset")
+		}
+
+		//########### Store the asset details in the ledger ###########
+
+		err = stub.PutState(id,assetbytes)
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+	} else if type == "shelter"{
+		asset := Shelter{resource}
+		assetbytes, err = json.Marshal(victim)	//Marshal the asset structure into a sequence of bytes
+		if err != nil {
+			return shim.Error("Error marshalling asset")
+		}
+
+		//########### Store the asset details in the ledger ###########
+
+		err = stub.PutState(id,assetbytes)
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+	} else if type == "medicalkit"{
+		asset := MedicalKit{resource}
+		assetbytes, err = json.Marshal(victim)	//Marshal the asset structure into a sequence of bytes
+		if err != nil {
+			return shim.Error("Error marshalling asset")
+		}
+
+		//########### Store the asset details in the ledger ###########
+
+		err = stub.PutState(id,assetbytes)
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+	} else if type == "moveinshelter"{
+		asset := MoveInShelter{resource}
+		assetbytes, err = json.Marshal(victim)	//Marshal the asset structure into a sequence of bytes
+		if err != nil {
+			return shim.Error("Error marshalling asset")
+		}
+
+		//########### Store the asset details in the ledger ###########
+
+		err = stub.PutState(id,assetbytes)
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+	}
+	
 }
 
 func main() {
