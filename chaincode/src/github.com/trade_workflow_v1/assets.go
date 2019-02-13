@@ -8,6 +8,7 @@ type Resource struct{
 	Status				string		`json:"status"`
 	Carrier				string		`json:"carrier"`
 	Description			string 		`json:"description"`
+	CurrentLocation		string		`json:"location"`
 }
 
 type Food struct{
