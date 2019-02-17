@@ -218,6 +218,7 @@ func (t *DisasterChaincode) FetchRequestInfoByStatus(stub shim.ChaincodeStubInte
 
 func (t *DisasterChaincode) Response_RequestOfVictimToReliefCamp(stub shim.ChaincodeStubInterface,invokerOrg string, invokerCertIssuer string, args []string) pb.Response{
 
+	var err errors
 	if !t.testMode && !authenticateReliefCamp(invokerOrg,invokerCertIssuer){
 		return shim.Error("Caller not a member of the relief camp. access denied")
 	}
@@ -243,50 +244,205 @@ func (t *DisasterChaincode) Response_RequestOfVictimToReliefCamp(stub shim.Chain
 			return shim.Error("Error while accessing state through an iterator")
 		}
 
-	keys = append(keys,key)
+		keys = append(keys,key)
 
-	var attr []string
-	_,attr,err = stub.SplitCompositeKey(key)
-	if err != nil{
-		return shim.Error("error while splitting the composite key : %s",err.Error())
-	}
+		var attr []string
+		_,attr,err = stub.SplitCompositeKey(key)
+		if err != nil{
+			return shim.Error("error while splitting the composite key : %s",err.Error())
+		}
 
-	kemail = attr[3]
-	krid = attr[4]
-	// fetch the particular requeset
-	requestBytes,err := stub.GetState(krid)
-	if err != nil {
-		return shim.Error("Error while getting the particular request with ri %s : %s",rid,err.Error())
-	}
+		kemail = attr[3]
+		krid = attr[4]
+		// fetch the particular requeset
+		requestBytes,err := stub.GetState(krid)
+		if err != nil {
+			fmt.Println("error while retieving the request info from the ledger " + err.Error())
+			return shim.Error(err.Error())
+		} else if requestbytes == nil {
+			fmt.Println("request does not exist")
+		}
 
-	if err != nil {
-		fmt.Println("error while retieving the asset info from the ledger " + err.Error())
-		return shim.Error(err.Error())
-	} else if requestbytes == nil {
-		fmt.Println("request does not exist")
-	}
+		request := VictimRequest{}
+		err = json.Unmarshal(requestbytes,&request)
 
-	request := VictimRequest{}
-	err = json.Unmarshal(requestbytes,&request)
-
-	if err != nil {
-		fmt.Println("error while unmarshalling request" + err.Error())
-		return shim.Error(err.Error())
-	}
+		if err != nil {
+			fmt.Println("error while unmarshalling request" + err.Error())
+			return shim.Error(err.Error())
+		}
 
 	//process the request
-	resourcetype := request.Need
-	assetIterator,err := stub.GetStateByPartialCompositeKey("loc-type-id",[]string{request.RequestTo,resourcetype})
-	if err != nil {
-		return shim.Error("Error while accessing state : %s", err.Error())
-	}
-	defer assetIterator.close()
-	if assetIterator.HasNext(){
-		
-	}
+		resourcetype := request.Need
+		assetIterator,err := stub.GetStateByPartialCompositeKey("loc-type-id",[]string{request.RequestTo,resourcetype})
+		if err != nil {
+			return shim.Error("Error while accessing state(by partial composite key) : %s", err.Error())
+		}
+		defer assetIterator.close()
+		for assetIterator.HasNext(){
+			var arr []string
+			assetCompKey,_,err = assetIterator.Next() //composite key loc-type-id specific to the asset which we 
+			if err != nil {								// are going to dispatch
+				return shim.Error("some error occured while fetching the next composite key in the list")
+			}
+			_,arr,err = stub.SplitCompositeKey(assetCompKey)
+			if err != nil {
+				return shim.Error("some error occured while splitting the composite key")
+			}
+			
+			dispatchAssetBytes,err := stub.GetState(arr[2]) // arr[2] in the composite key store the respective id
+			if err != nil{
+				return shim.Error("error occured while fetching the particular asset  whose id was obtained from the composite key")
+			}
 
+			//food - change the required parameters
+			if request.Need == "food" {
+				dispatchAsset := Food{}
+				err = json.Unmarshal(dispatchAssetBytes,&dispatchAsset)
+				if err != nil {
+					fmt.Println("error while unmarshalling request" + err.Error())
+					return shim.Error(err.Error())
+				}
+				dispatchAsset.beneficiary = request.Email
+				dispatchAsset.Status = "dispatched"
+				dispatchAsset.Currentlocation = dispatchAsset.Currentlocation+"-dispatched"
+				dispatchAssetBytes,err = json.Marshal(dispatchAsset)
+				if err != nil {
+					return shim.Error(error while marshalling)
+				}
+				//re-write the asset on the ledger
+				err = stub.PutState(arr[2],dispatchAssetBytes)
+				if err != nil{
+					return shim.Error("error while writing the asset onto the ledger")
+				}
+				//delete the composite key because the asset does not exist in the camp anymore
+				// and create a new relevant composite key
+				stub.PutState(assetCompKey,nil)
+				indexName := "loc-type-id"
+				assetCompKey, err = stub.CreateCompositeKey(indexName,[]string{dispatchAsset.Currentlocation,arr[1],arr[2]})
+				value := []byte{0x00}
+				err = stub.PutState(assetCompKey,value)
+				break
 
+			} else if request.Need == "clothes" { 			//clothes
+				dispatchAsset := Food{}
+				err = json.Unmarshal(dispatchAssetBytes,&dispatchAsset)
+				if err != nil {
+					fmt.Println("error while unmarshalling request" + err.Error())
+					return shim.Error(err.Error())
+				}
+				dispatchAsset.beneficiary = request.Email
+				dispatchAsset.Status = "dispatched"
+				dispatchAsset.Currentlocation = dispatchAsset.Currentlocation+"-dispatched"
+				dispatchAssetBytes,err = json.Marshal(dispatchAsset)
+				if err != nil {
+					return shim.Error(error while marshalling)
+				}
+				//re-write the asset on the ledger
+				err = stub.PutState(arr[2],dispatchAssetBytes)
+				if err != nil{
+					return shim.Error("error while writing the asset onto the ledger")
+				}
+				//delete the composite key because the asset does not exist in the camp anymore
+				// and create a new relevant composite key
+				stub.PutState(assetCompKey,nil)
+				indexName := "loc-type-id"
+				assetCompKey, err = stub.CreateCompositeKey(indexName,[]string{dispatchAsset.Currentlocation,arr[1],arr[2]})
+				value := []byte{0x00}
+				err = stub.PutState(assetCompKey,value)
+				break
+			} else if request.Need == "moveinshelter" {  			//moveinshelter
+				dispatchAsset := Food{}
+				err = json.Unmarshal(dispatchAssetBytes,&dispatchAsset)
+				if err != nil {
+					fmt.Println("error while unmarshalling request" + err.Error())
+					return shim.Error(err.Error())
+				}
+				dispatchAsset = dispatchAsset - 1
+				var x string
+				if dispatchAsset == 0
+					x = dispatchAsset.Currentlocation+"-dispatched"
+				dispatchAsset.beneficiary = dispatchAsset.beneficiary+","+request.Email
+				//here, the value is not dispatched but it is accepted
+				dispatchAsset.Status = "accepted"
+				dispatchAssetBytes,err = json.Marshal(dispatchAsset)
+				if err != nil {
+					return shim.Error(error while marshalling)
+				}
+				//re-write the asset on the ledger
+				err = stub.PutState(arr[2],dispatchAssetBytes)
+				if err != nil{
+					return shim.Error("error while writing the asset onto the ledger")
+				}
+				//delete the composite key because the asset does not exist in the camp anymore
+				// and create a new relevant composite key
+				stub.PutState(assetCompKey,nil)
+				indexName := "loc-type-id"
+				assetCompKey, err = stub.CreateCompositeKey(indexName,[]string{x,arr[1],arr[2]})
+				value := []byte{0x00}
+				err = stub.PutState(assetCompKey,value)
+				break
+			} else if request.Need == "shelter" {   			//shelter
+				dispatchAsset := Food{}
+				err = json.Unmarshal(dispatchAssetBytes,&dispatchAsset)
+				if err != nil {
+					fmt.Println("error while unmarshalling request" + err.Error())
+					return shim.Error(err.Error())
+				}
+				dispatchAsset.beneficiary = request.Email
+				dispatchAsset.Status = "dispatched"
+				dispatchAsset.Currentlocation = dispatchAsset.Currentlocation+"-dispatched"
+				dispatchAssetBytes,err = json.Marshal(dispatchAsset)
+				if err != nil {
+					return shim.Error(error while marshalling)
+				}
+				//re-write the asset on the ledger
+				err = stub.PutState(arr[2],dispatchAssetBytes)
+				if err != nil{
+					return shim.Error("error while writing the asset onto the ledger")
+				}
+				//delete the composite key because the asset does not exist in the camp anymore
+				// and create a new relevant composite key
+				stub.PutState(assetCompKey,nil)
+				indexName := "loc-type-id"
+				assetCompKey, err = stub.CreateCompositeKey(indexName,[]string{dispatchAsset.Currentlocation,arr[1],arr[2]})
+				value := []byte{0x00}
+				err = stub.PutState(assetCompKey,value)
+				break
+			} else if request.Need == "medicalkit" {//medicalkit
+				dispatchAsset := Food{}
+				err = json.Unmarshal(dispatchAssetBytes,&dispatchAsset)
+				if err != nil {
+					fmt.Println("error while unmarshalling request" + err.Error())
+					return shim.Error(err.Error())
+				}
+				dispatchAsset.beneficiary = request.Email
+				dispatchAsset.Status = "dispatched"
+				dispatchAsset.Currentlocation = dispatchAsset.Currentlocation+"-dispatched"
+				dispatchAssetBytes,err = json.Marshal(dispatchAsset)
+				if err != nil {
+					return shim.Error(error while marshalling)
+				}
+				//re-write the asset on the ledger
+				err = stub.PutState(arr[2],dispatchAssetBytes)
+				if err != nil{
+					return shim.Error("error while writing the asset onto the ledger")
+				}
+				//delete the composite key because the asset does not exist in the camp anymore
+				// and create a new relevant composite key
+				stub.PutState(assetCompKey,nil)
+				indexName := "loc-type-id"
+				assetCompKey, err = stub.CreateCompositeKey(indexName,[]string{dispatchAsset.Currentlocation,arr[1],arr[2]})
+				value := []byte{0x00}
+				err = stub.PutState(assetCompKey,value)
+				break
+			}
+		}
+
+		if err != nil{
+			return shim.Error("Some error occured while writing stuff to ledger in the last step")
+		}
 	}
+	return shim.Success(nil)	
 }
 
 func (t *DisasterChaincode) AddAsset(stub shim.ChaincodeStubInterface,invokerOrg string, invokerCertIssuer string, args []string) pb.Response{
