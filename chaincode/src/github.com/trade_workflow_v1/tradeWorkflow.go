@@ -55,6 +55,8 @@ func (t *DisasterChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response
 		 return t.Request_VictimToReliefCamp(stub,invokerOrg, invokerCertIssuer,args)
 	 } else if function == "AddAsset" {
 		 return t.AddAsset(stub,invokerOrg, invokerCertIssuer,args)
+	 } else if function == "Response_RequestOfVictimToReliefCamp" {
+		 return t.Response_RequestOfVictimToReliefCamp(stub,invokerOrg,invokerCertIssuer,args)
 	 }
 
 	 return shim.Error("invalid mehtod invokation")
@@ -210,15 +212,15 @@ func (t *DisasterChaincode) Request_VictimToReliefCamp(stub shim.ChaincodeStubIn
 	return shim.Success(nil)
 }
 
-func (t *DisasterChaincode) FetchRequestInfoByStatus(stub shim.ChaincodeStubInterface,invokerOrg string, invokerCertIssuer string, args []string) pb.Response{
+//func (t *DisasterChaincode) FetchRequestInfoByStatus(stub shim.ChaincodeStubInterface,invokerOrg string, invokerCertIssuer string, args []string) pb.Response{
 	
 	
 
-}	
+//}	
 
 func (t *DisasterChaincode) Response_RequestOfVictimToReliefCamp(stub shim.ChaincodeStubInterface,invokerOrg string, invokerCertIssuer string, args []string) pb.Response{
 
-	var err errors
+	var err error
 	if !t.testMode && !authenticateReliefCamp(invokerOrg,invokerCertIssuer){
 		return shim.Error("Caller not a member of the relief camp. access denied")
 	}
@@ -231,15 +233,16 @@ func (t *DisasterChaincode) Response_RequestOfVictimToReliefCamp(stub shim.Chain
 	camp := args[0]		//fetch request sent to a particular camp which are pending to be addressed
 	status := args[1]	// that is , which are still in requested state
 
-	keysIterator,err = stub.GetStateByPartialCompositeKey("request-reliefcamp-status-email-rid",[]string{"r",camp,status})
+	keysIterator,err := stub.GetStateByPartialCompositeKey("request-reliefcamp-status-email-rid",[]string{"r",camp,status})
 	if err != nil {
-		return shim.Error("Error while accessing state : %s", err.Error())
+		return shim.Error("Error while accessing state :"+ err.Error())
 	}
 
-	defer keysIterator.close()
+	defer keysIterator.Close()
 	var keys []string
 	for keysIterator.HasNext() {
-		key,_,err = keysIterator.Next()
+		keyv,err := keysIterator.Next()
+		key := keyv.Key
 		if err != nil{
 			return shim.Error("Error while accessing state through an iterator")
 		}
@@ -249,22 +252,22 @@ func (t *DisasterChaincode) Response_RequestOfVictimToReliefCamp(stub shim.Chain
 		var attr []string
 		_,attr,err = stub.SplitCompositeKey(key)
 		if err != nil{
-			return shim.Error("error while splitting the composite key : %s",err.Error())
+			return shim.Error("error while splitting the composite key : " + err.Error())
 		}
 
-		kemail = attr[3]
-		krid = attr[4]
+		kemail := attr[3]
+		krid := attr[4]
 		// fetch the particular requeset
 		requestBytes,err := stub.GetState(krid)
 		if err != nil {
 			fmt.Println("error while retieving the request info from the ledger " + err.Error())
 			return shim.Error(err.Error())
-		} else if requestbytes == nil {
+		} else if requestBytes == nil {
 			fmt.Println("request does not exist")
 		}
 
 		request := VictimRequest{}
-		err = json.Unmarshal(requestbytes,&request)
+		err = json.Unmarshal(requestBytes,&request)
 
 		if err != nil {
 			fmt.Println("error while unmarshalling request" + err.Error())
@@ -275,12 +278,13 @@ func (t *DisasterChaincode) Response_RequestOfVictimToReliefCamp(stub shim.Chain
 		resourcetype := request.Need
 		assetIterator,err := stub.GetStateByPartialCompositeKey("loc-type-id",[]string{request.RequestTo,resourcetype})
 		if err != nil {
-			return shim.Error("Error while accessing state(by partial composite key) : %s", err.Error())
+			return shim.Error("Error while accessing state(by partial composite key) : " +  err.Error())
 		}
-		defer assetIterator.close()
+		defer assetIterator.Close()
 		for assetIterator.HasNext(){
 			var arr []string
-			assetCompKey,_,err = assetIterator.Next() //composite key loc-type-id specific to the asset which we 
+			assetCompKeyvalue,err := assetIterator.Next() //composite key loc-type-id specific to the asset which we 
+			assetCompKey := assetCompKeyvalue.Key
 			if err != nil {								// are going to dispatch
 				return shim.Error("some error occured while fetching the next composite key in the list")
 			}
@@ -302,12 +306,12 @@ func (t *DisasterChaincode) Response_RequestOfVictimToReliefCamp(stub shim.Chain
 					fmt.Println("error while unmarshalling request" + err.Error())
 					return shim.Error(err.Error())
 				}
-				dispatchAsset.beneficiary = request.Email
+				dispatchAsset.Beneficiary = request.Email
 				dispatchAsset.Status = "dispatched"
 				dispatchAsset.Currentlocation = dispatchAsset.Currentlocation+"-dispatched"
 				dispatchAssetBytes,err = json.Marshal(dispatchAsset)
 				if err != nil {
-					return shim.Error(error while marshalling)
+					return shim.Error("error while marshalling")
 				}
 				//re-write the asset on the ledger
 				err = stub.PutState(arr[2],dispatchAssetBytes)
@@ -324,7 +328,7 @@ func (t *DisasterChaincode) Response_RequestOfVictimToReliefCamp(stub shim.Chain
 				break
 
 			} else if request.Need == "clothes" { 			//clothes
-				dispatchAsset := Food{}
+				dispatchAsset := Clothes{}
 				err = json.Unmarshal(dispatchAssetBytes,&dispatchAsset)
 				if err != nil {
 					fmt.Println("error while unmarshalling request" + err.Error())
@@ -335,7 +339,7 @@ func (t *DisasterChaincode) Response_RequestOfVictimToReliefCamp(stub shim.Chain
 				dispatchAsset.Currentlocation = dispatchAsset.Currentlocation+"-dispatched"
 				dispatchAssetBytes,err = json.Marshal(dispatchAsset)
 				if err != nil {
-					return shim.Error(error while marshalling)
+					return shim.Error("error while marshalling")
 				}
 				//re-write the asset on the ledger
 				err = stub.PutState(arr[2],dispatchAssetBytes)
@@ -351,22 +355,22 @@ func (t *DisasterChaincode) Response_RequestOfVictimToReliefCamp(stub shim.Chain
 				err = stub.PutState(assetCompKey,value)
 				break
 			} else if request.Need == "moveinshelter" {  			//moveinshelter
-				dispatchAsset := Food{}
+				dispatchAsset := MoveInShelter{}
 				err = json.Unmarshal(dispatchAssetBytes,&dispatchAsset)
 				if err != nil {
 					fmt.Println("error while unmarshalling request" + err.Error())
 					return shim.Error(err.Error())
 				}
-				dispatchAsset = dispatchAsset - 1
-				var x string
-				if dispatchAsset == 0
-					x = dispatchAsset.Currentlocation+"-dispatched"
+				dispatchAsset.Capacity = dispatchAsset.Capacity - 1
+				//var x string
+				//if dispatchAsset.Capacity == 0
+					//x = dispatchAsset.CurrentLocation + "-dispatched"
 				dispatchAsset.beneficiary = dispatchAsset.beneficiary+","+request.Email
 				//here, the value is not dispatched but it is accepted
 				dispatchAsset.Status = "accepted"
 				dispatchAssetBytes,err = json.Marshal(dispatchAsset)
 				if err != nil {
-					return shim.Error(error while marshalling)
+					return shim.Error("error while marshalling")
 				}
 				//re-write the asset on the ledger
 				err = stub.PutState(arr[2],dispatchAssetBytes)
@@ -382,7 +386,7 @@ func (t *DisasterChaincode) Response_RequestOfVictimToReliefCamp(stub shim.Chain
 				err = stub.PutState(assetCompKey,value)
 				break
 			} else if request.Need == "shelter" {   			//shelter
-				dispatchAsset := Food{}
+				dispatchAsset := Shelter{}
 				err = json.Unmarshal(dispatchAssetBytes,&dispatchAsset)
 				if err != nil {
 					fmt.Println("error while unmarshalling request" + err.Error())
@@ -393,7 +397,7 @@ func (t *DisasterChaincode) Response_RequestOfVictimToReliefCamp(stub shim.Chain
 				dispatchAsset.Currentlocation = dispatchAsset.Currentlocation+"-dispatched"
 				dispatchAssetBytes,err = json.Marshal(dispatchAsset)
 				if err != nil {
-					return shim.Error(error while marshalling)
+					return shim.Error("error while marshalling")
 				}
 				//re-write the asset on the ledger
 				err = stub.PutState(arr[2],dispatchAssetBytes)
@@ -409,7 +413,7 @@ func (t *DisasterChaincode) Response_RequestOfVictimToReliefCamp(stub shim.Chain
 				err = stub.PutState(assetCompKey,value)
 				break
 			} else if request.Need == "medicalkit" {//medicalkit
-				dispatchAsset := Food{}
+				dispatchAsset := MedicalKit{}
 				err = json.Unmarshal(dispatchAssetBytes,&dispatchAsset)
 				if err != nil {
 					fmt.Println("error while unmarshalling request" + err.Error())
@@ -420,7 +424,7 @@ func (t *DisasterChaincode) Response_RequestOfVictimToReliefCamp(stub shim.Chain
 				dispatchAsset.Currentlocation = dispatchAsset.Currentlocation+"-dispatched"
 				dispatchAssetBytes,err = json.Marshal(dispatchAsset)
 				if err != nil {
-					return shim.Error(error while marshalling)
+					return shim.Error("error while marshalling")
 				}
 				//re-write the asset on the ledger
 				err = stub.PutState(arr[2],dispatchAssetBytes)
@@ -447,10 +451,10 @@ func (t *DisasterChaincode) Response_RequestOfVictimToReliefCamp(stub shim.Chain
 
 func (t *DisasterChaincode) AddAsset(stub shim.ChaincodeStubInterface,invokerOrg string, invokerCertIssuer string, args []string) pb.Response{
 	var error errors
-	type := args[0]
+	Type := args[0]
 	var nargs int
 	
-	if type == moveinshelter{
+	if Type == moveinshelter{
 		nargs = 11
 	} else {
 		nargs = 8
@@ -493,18 +497,18 @@ if err != nil{
 	return shim.Error("error while getting the asset id value :  %s",err.Error())
 }
 
-//############## create a composite key to fetch assets of a particlar type and status################
+//############## create a composite key to store assets of a particlar type and status################
 
 indexName := "loc-type-id"
-request_camp_emailIndexKey, err := stub.CreateCompositeKey(indexName,[]string{Currentlocation,type,ids})
+request_camp_emailIndexKey, err := stub.CreateCompositeKey(indexName,[]string{Currentlocation,Type,ids})
 if err != nil {
 	fmt.Println("error while creating a composite key for asset")
 	return shim.Error(err.Error())
 }
 
 //################ create a particular type of resource ##################
-	resource := Resource{type,quantity,beneficiary,source,status,carrier,description}
-	if type == "food"{
+	resource := Resource{Type,quantity,beneficiary,source,status,carrier,description}
+	if Type == "food"{
 		asset := Food{resource}
 		assetbytes, err = json.Marshal(victim)	//Marshal the asset structure into a sequence of bytes
 		if err != nil {
@@ -517,7 +521,7 @@ if err != nil {
 			return shim.Error(err.Error())
 		}
 
-	} else if type == "clothes"{
+	} else if Type == "clothes"{
 	    asset := Clothes{resource}
 		assetbytes, err = json.Marshal(victim)	//Marshal the asset structure into a sequence of bytes
 		if err != nil {
@@ -530,7 +534,7 @@ if err != nil {
 		if err != nil {
 			return shim.Error(err.Error())
 		}
-	} else if type == "shelter"{
+	} else if Type == "shelter"{
 		asset := Shelter{resource}
 		assetbytes, err = json.Marshal(victim)	//Marshal the asset structure into a sequence of bytes
 		if err != nil {
@@ -543,7 +547,7 @@ if err != nil {
 		if err != nil {
 			return shim.Error(err.Error())
 		}
-	} else if type == "medicalkit"{
+	} else if Type == "medicalkit"{
 		asset := MedicalKit{resource}
 		assetbytes, err = json.Marshal(victim)	//Marshal the asset structure into a sequence of bytes
 		if err != nil {
@@ -556,7 +560,7 @@ if err != nil {
 		if err != nil {
 			return shim.Error(err.Error())
 		}
-	} else if type == "moveinshelter"{
+	} else if Type == "moveinshelter"{
 		asset := MoveInShelter{resource}
 		assetbytes, err = json.Marshal(victim)	//Marshal the asset structure into a sequence of bytes
 		if err != nil {
