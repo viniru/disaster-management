@@ -62,6 +62,15 @@ func (t *DisasterChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response
 	 return shim.Error("invalid mehtod invokation")
 }
 
+func (t *DisasterChaincode) Test(stub shim.ChaincodeStubInterface,invokerOrg string, invokerCertIssuer string, args []string) pb.Response{
+	Bytes,err := stub.GetState(args[0])
+	if err  != nil {
+		return shim.Error("Failed to check whether the email exists or not " + err.Error())
+	} else {
+		return shim.Success
+	}
+}
+
 func (t *DisasterChaincode) RegisterVictim(stub shim.ChaincodeStubInterface,invokerOrg string, invokerCertIssuer string, args []string) pb.Response{
 var err error
 
