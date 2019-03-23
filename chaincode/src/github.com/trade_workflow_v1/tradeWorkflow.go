@@ -59,7 +59,9 @@ func (t *DisasterChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response
 		 return t.Response_RequestOfVictimToReliefCamp(stub,invokerOrg,invokerCertIssuer,args)
 	 } else if function == "PrintInfo" {
 		 return t.PrintInfo(stub,invokerOrg,invokerCertIssuer,args)
-	 }
+	 } else if function == "RegisterVolunteer" {
+		return t.RegisterVolunteer(stub,invokerOrg, invokerCertIssuer,args)
+	}
 
 	 return shim.Error("invalid mehtod invokation")
 }
@@ -566,8 +568,80 @@ func (t *DisasterChaincode) PrintInfo(stub shim.ChaincodeStubInterface,invokerOr
 	} 
 	return shim.Success(nil)
 
-
 }
+
+
+
+func (t *DisasterChaincode) RegisterVolunteer(stub shim.ChaincodeStubInterface,invokerOrg string, invokerCertIssuer string, args []string) pb.Response{
+	var err error
+	
+		if !t.testMode && !authenticateReliefCamp(invokerOrg,invokerCertIssuer){
+			return shim.Error("Caller not a member of the relief camp. access denied")
+		}
+	
+		if(len(args) != 4) {
+			err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 4.Found %d",len(args)))
+			return shim.Error(err.Error())
+		}
+		localhub := strings.ToLower(args[0])
+		email := strings.ToLower(args[2])
+		
+		//=== check if the user already exitsts===
+		volunteerBytes, err := stub.GetState(email)
+		if err != nil {
+			fmt.Println("Failed to check whether the email exists or not for the volunteer")
+			return shim.Error("Failed to check whether the email exists or not for the volunteer " + err.Error())
+		} else if volunteerBytes != nil {
+			fmt.Println("This volunteer already exists " + email)
+			return shim.Error("The requested email already exists " + email)
+		}
+	
+		//########### create victim object and marshal to json ##############
+		
+		var volunteer Volunteer
+		volunteer.Localhub = localhub
+		volunteer.NumOffers = 0
+		volunteer.Details = Participant{
+		Email : email,
+		Location : args[2],
+		Description	 : args[3],
+		}
+	
+		volunteerBytes, err = json.Marshal(volunteer)		//Marshal the victim structure into a sequence of bytes
+		if err != nil {
+			return shim.Error("Error marshalling trade Agreement structure")
+		}
+	
+	
+		//########### Store the volunteer details in the ledger ###########
+	
+		err = stub.PutState(email,volunteerBytes)
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+	
+		//######### create a composite key ##########
+	
+		indexName := "localhub-email"
+		hub_emailIndexKey, err := stub.CreateCompositeKey(indexName,[]string{localhub, email})
+		if err != nil {
+			fmt.Println("error while creating a composite key")
+			return shim.Error(err.Error())
+		}
+	
+		//store the index name onto the ledger, just the index and not the info about the corresponding victim
+		
+		value := []byte{0x00}
+		stub.PutState(hub_emailIndexKey,value)
+	
+		//victim info saved successfully
+		fmt.Println("volunteer info saved successfully")
+		
+		return shim.Success(nil)
+	}
+
+
+
 
 func main() {
 	twc := new(DisasterChaincode)

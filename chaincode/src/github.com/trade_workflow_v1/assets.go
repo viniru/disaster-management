@@ -34,6 +34,7 @@ type Victim struct{
 
 type Volunteer struct{
 	Localhub 			string 		`json:"localhub"`
+	NumOffers			int			`json:"numofoffers"`
 	Details				Participant `json:"details"`
 }
 
@@ -51,4 +52,11 @@ type VictimRequest struct{
 	Need				string		`json:"need"`
 	Quantity			string		`json:"quantity"`
 	Description			string		`json:"description"`
+}
+
+type VolunteerOffer struct{
+	Email				string		`json:"email"`
+	OfferId				string		`json:"email"`
+	Status				string		`json:"email"`
+	Description			string		`json:"email"`
 }
