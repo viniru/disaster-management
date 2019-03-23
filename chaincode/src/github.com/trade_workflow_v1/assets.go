@@ -11,28 +11,14 @@ type Resource struct{
 	CurrentLocation		string		`json:"location"`
 }
 
-type Food struct{
-	Res					Resource	`json:"resource"`
-}
-
-type Clothes struct{
-	Res					Resource	`json:"resource"`
-}
 
 type MoveInShelter struct{
 	Capacity			int			`json:"capacity"`
 	Address				string		`josn:"address"`
 	Food				bool		`json:"food"`
-	Res					Resource	`json:"resource"`	
+	People				[]string	`json:"people"`
 }
 
-type Shelter struct{
-	Res						Resource	`json:"resource"`
-}
-
-type MedicalKit struct{
-	Res					Resource	`json:"resource"`
-}
 
 type GovernmentRequest struct{
 

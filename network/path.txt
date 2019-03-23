@@ -25,8 +25,16 @@ peer chaincode invoke -n tw -c '{"Args":["RegisterVictim","xyz camp","good","vin
 
 peer chaincode invoke -n tw -c '{"Args":["Request_VictimToReliefCamp","vin@gmail.com","food","1",""]}' -C tradechannel
 
-peer chaincode invoke -n tw -c '{"Args":["AddAsset","available","1"," ","xyz camp","status","carrier","nil","xyz camp"]}' -C tradechannel
 
-peer chaincode invoke -n tw -c '{"Args":["Response_RequestOfVictimToReliefCamp","xyz camp","requested"]}' -C tradechannel
+peer chaincode invoke -n tw -c '{"Args":["PrintInfo","victim","vin@gmail.com"]}' -C tradechannel
+
+peer chaincode invoke -n tw -c '{"Args":["PrintInfo","victimrequest","vin@gmail.com1"]}' -C tradechannel
+
+peer chaincode invoke -n tw -c '{"Args":["PrintInfo","resource","2"]}' -C tradechannel
+
+peer chaincode invoke -n tw -c '{"Args":["AddAsset","food","1"," ","xyz camp","available","nil","nil","xyz camp"]}' -C tradechannel
+
+peer chaincode invoke -n tw -c '{"Args":["Response_RequestOfVictimToReliefCamp","xyz camp","requested","",""]}' -C tradechannel
+
 
 
